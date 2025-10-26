@@ -2,10 +2,12 @@
   "name": "payment-slip-parser",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "npx tsc --project tsconfig.json",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -19,6 +21,11 @@
   "homepage": "https://github.com/larb26656/payment-slip-parser#readme",
   "description": "",
   "dependencies": {
+    "chrono-node": "^2.9.0",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "vitest": "^4.0.3"
   }
 }
