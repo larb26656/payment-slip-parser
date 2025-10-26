@@ -13,7 +13,7 @@ export function createMakeByKbankParser(): PaymentSlipParser<ParserName> {
 }
 
 function canParse(text: string): boolean {
-  const keywords = ["make by KBank", "make by"];
+  const keywords = ["make by KBank", "make by", "by KBank", "make\nby KBank"];
   return keywords.some((keyword) => text.includes(keyword));
 }
 
