@@ -11,6 +11,11 @@
     "postinstall": "npm run build",
     "test": "vitest"
   },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/larb26656/payment-slip-parser.git"
