@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMakeByKbankParser } from "./make-by-kbank.js";
+import { createMakeByKbankParser } from "./parser.js";
 
 describe("parse (MakeByKBank)", () => {
   const p = createMakeByKbankParser();

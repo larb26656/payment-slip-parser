@@ -1,22 +1,118 @@
-import type { PaymentSlip, PaymentSlipParser } from "../types.js";
+import type { PaymentSlip, PaymentSlipParser } from "../../types.js";
+import { createParser } from "../../parser.js";
 
 const BRAND_SEPARATOR = "<Brand>";
+const PARSER_NAME = "MakeByKBank" as const;
+type ParserName = typeof PARSER_NAME;
+
+export function createMakeByKbankParser(): PaymentSlipParser<ParserName> {
+  return createParser(PARSER_NAME, {
+    canParse,
+    parse,
+  });
+}
+
+function canParse(text: string): boolean {
+  const keywords = ["make by KBank", "make by"];
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function parse(text: string): PaymentSlip<ParserName> {
+  const normalizeText = normalize(text);
+  const payload: PaymentSlip<ParserName> = {
+    provider: PARSER_NAME,
+    amount: 0,
+    fee: 0,
+  };
+
+  const rows = normalizeText.split("\n");
+  let seenBrand = false;
+  let prevLine = "";
+  let accountNameStack = [];
+
+  for (const row of rows) {
+    const datetime = extractDatetime(row);
+    const isAccountDetailSection = seenBrand || payload.datetime;
+
+    if (datetime != null) {
+      payload.datetime = datetime;
+      continue;
+    }
+
+    if (row === BRAND_SEPARATOR) {
+      seenBrand = true;
+      continue;
+    }
+
+    const accountName = accountNameStack.join(" ");
+
+    const account = extractAccount(accountName || prevLine, row);
+
+    if (isAccountDetailSection && account) {
+      if (!payload.payerAccount) {
+        payload.payer = account.name;
+        payload.payerAccount = account.no;
+
+        // reset accountNameStack;
+        accountNameStack = [];
+        continue;
+      } else if (!payload.payeeAccount) {
+        payload.payee = account.name;
+        payload.payeeAccount = account.no;
+
+        // reset accountNameStack;
+        accountNameStack = [];
+        continue;
+      }
+    }
+
+    // seen datetime below should be account
+    if (
+      isAccountDetailSection &&
+      (!payload.payerAccount || !payload.payeeAccount)
+    ) {
+      accountNameStack.push(row);
+    }
+
+    const amount = extractAmount(prevLine, row);
+
+    if (amount !== undefined) {
+      payload.amount = amount;
+      continue;
+    }
+
+    const fee = extractFee(prevLine, row);
+
+    if (fee !== undefined) {
+      payload.fee = fee;
+      continue;
+    }
+
+    const transactionId = extractTransactionId(prevLine, row);
+
+    if (transactionId) {
+      payload.transactionId = transactionId;
+      continue;
+    }
+
+    // if no process save prevLine
+    prevLine = row;
+  }
+
+  return payload;
+}
 
 function normalize(text: string): string {
   let normalizeText = text;
 
   normalizeText = normalizeText.replaceAll("PAYMENT COMPLETED", "");
-
   normalizeText = normalizeText.replaceAll("Scan to verify", "");
-
-  // Remove icon market
+  // Remove icon market that ocr think that area is text
   normalizeText = normalizeText.replaceAll("CULO", "");
-
   normalizeText = normalizeText.replaceAll("make\nby KBank", BRAND_SEPARATOR);
   normalizeText = normalizeText.replaceAll("make by KBank", BRAND_SEPARATOR);
-  // normalizeText = normalizeText.replace(/make\s*by\s*KBank/gi, BRAND_SEPARATOR);
 
-  return normalizeText;
+  return normalizeText.trim();
 }
 
 function extractDatetime(input: string): Date | null {
@@ -194,95 +290,4 @@ function extractTransactionId(
   if (!regex.test(textToProcess)) return undefined;
 
   return textToProcess;
-}
-
-function parse(text: string): PaymentSlip {
-  const normalizeText = normalize(text);
-  const payload: PaymentSlip = {
-    provider: "MakeByKBank",
-    amount: 0,
-    fee: 0,
-  };
-
-  const rows = normalizeText.split("\n");
-  let seenBrand = false;
-  let prevLine = "";
-  let accountNameStack = [];
-
-  for (const row of rows) {
-    const datetime = extractDatetime(row);
-    const isAccountDetailSection = seenBrand || payload.datetime;
-
-    if (datetime != null) {
-      payload.datetime = datetime;
-      continue;
-    }
-
-    if (row === BRAND_SEPARATOR) {
-      seenBrand = true;
-      continue;
-    }
-
-    const accountName = accountNameStack.join(" ");
-
-    const account = extractAccount(accountName || prevLine, row);
-
-    if (isAccountDetailSection && account) {
-      if (!payload.payerAccount) {
-        payload.payer = account.name;
-        payload.payerAccount = account.no;
-
-        // reset accountNameStack;
-        accountNameStack = [];
-        continue;
-      } else if (!payload.payeeAccount) {
-        payload.payee = account.name;
-        payload.payeeAccount = account.no;
-
-        // reset accountNameStack;
-        accountNameStack = [];
-        continue;
-      }
-    }
-
-    // seen datetime below should be account
-    if (
-      isAccountDetailSection &&
-      (!payload.payerAccount || !payload.payeeAccount)
-    ) {
-      accountNameStack.push(row);
-    }
-
-    const amount = extractAmount(prevLine, row);
-
-    if (amount !== undefined) {
-      payload.amount = amount;
-      continue;
-    }
-
-    const fee = extractFee(prevLine, row);
-
-    if (fee !== undefined) {
-      payload.fee = fee;
-      continue;
-    }
-
-    const transactionId = extractTransactionId(prevLine, row);
-
-    if (transactionId) {
-      payload.transactionId = transactionId;
-      continue;
-    }
-
-    // if no process save prevLine
-    prevLine = row;
-  }
-
-  return payload;
-}
-
-export function createMakeByKbankParser(): PaymentSlipParser {
-  return {
-    parse,
-  };
 }
