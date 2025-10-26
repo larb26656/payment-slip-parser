@@ -1,4 +1,5 @@
 export * from "./provider/index.js";
+export * from "./parser.js";
 
 export { ParserError, Result } from "./types.js";
 
