@@ -106,6 +106,9 @@ function normalize(text: string): string {
   let normalizeText = text;
 
   normalizeText = normalizeText.replaceAll("PAYMENT COMPLETED", "");
+  normalizeText = normalizeText.replaceAll("PAYMENT\nCOMPLETED", "");
+  normalizeText = normalizeText.replaceAll("TRANSFER COMPLETED", "");
+  normalizeText = normalizeText.replaceAll("TRANSFER\nCOMPLETED", "");
   normalizeText = normalizeText.replaceAll("Scan to verify", "");
   // Remove icon market that ocr think that area is text
   normalizeText = normalizeText.replaceAll("CULO", "");

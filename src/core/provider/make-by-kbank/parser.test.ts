@@ -151,4 +151,40 @@ QR Code: Scan to verify
     expect(result.payeeAccount).toBe("xxx-x-xxxxxx3150-x");
     expect(result.transactionId).toBe("EDC17611367756039575");
   });
+
+  it("parses slip with transfer completed label and prompt pay payee", () => {
+    const slip = `
+TRANSFER
+COMPLETED
+29 Sep 2025 19:15
+make
+by KBank
+TEAM T xxX-X-x5304-X
+Prompt
+Pay=
+PANAKORN
+JAIDEE
+xXX-XXX-9595
+Amount
+39.00 Baht
+Fee
+0.00 Baht
+Transaction ID: 045272506a6v4hu3bRSo
+Scan to verify
+`;
+
+    const result = p.parse(slip);
+
+    expect(result.provider).toBe("MakeByKBank");
+    expect(result.datetime?.toISOString()).toBe(
+      new Date(2025, 8, 29, 19, 15).toISOString()
+    );
+    expect(result.amount).toBe(39);
+    expect(result.fee).toBe(0);
+    expect(result.payer).toBe("TEAM T");
+    expect(result.payerAccount).toBe("xxx-x-x5304-x");
+    expect(result.payee).toBe("Prompt Pay= PANAKORN JAIDEE");
+    expect(result.payeeAccount).toBe("xxx-xxx-9595");
+    expect(result.transactionId).toBe("045272506a6v4hu3bRSo");
+  });
 });
